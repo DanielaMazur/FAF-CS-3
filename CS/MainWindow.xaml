@@ -17,20 +17,30 @@
         </Menu>
 
         <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-            <ListBox ItemsSource="{DynamicResource CutsomItemsDictList}">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <ListView ItemsSource="{Binding}">
-                            <ListView.View>
-                                <GridView>
-                                    <GridViewColumn DisplayMemberBinding="{Binding Path=Key}" Header="Key" Width="Auto"/>
-                                    <GridViewColumn DisplayMemberBinding="{Binding Path=Value}" Header="Value" Width="Auto" />
-                                </GridView>
-                            </ListView.View>
-                        </ListView>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+            <Grid Name="BodyContainer" Visibility="Hidden">
+                <Grid.RowDefinitions>
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
+                <CheckBox Grid.Row="0" Margin="7,2,0,2" Content="Toggle All Items" Checked="HandleAllItemsCheck" Unchecked="HandleAllItemsUnchecked"/>
+                <ListBox  Grid.Row="1" ItemsSource="{DynamicResource CustomItemsDictList}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel>
+                                <CheckBox Uid="{Binding Id}" IsChecked="{Binding IsChecked}" Checked="HandleCheckOneItem" Unchecked="HandleUnCheckOneItem" />
+                                <ListView ItemsSource="{Binding Properties}">
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn DisplayMemberBinding="{Binding Key}" Header="Key" Width="Auto"/>
+                                            <GridViewColumn DisplayMemberBinding="{Binding Value}" Header="Value" Width="Auto" />
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
         </ScrollViewer>
     </DockPanel>
 </Window>
