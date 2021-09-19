@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,13 +17,12 @@ namespace CS
      /// </summary>
      public partial class MainWindow : Window
      {
-          private string _importedFileContents;
           private List<CustomItem> CustomItemsList;
+          private List<CustomItem> FilteredCustomItemsList = new();
 
           public MainWindow()
           {
                InitializeComponent();
-               Resources["CutsomItemsDictList"] = new List<CustomItem>();
           }
 
           private void OpenAuditFile(object sender, RoutedEventArgs e)
@@ -36,13 +36,13 @@ namespace CS
                     try
                     {
                          using var sr = new StreamReader(fileDialog.FileName);
-                         _importedFileContents = sr.ReadToEnd();
-                         CustomItemsList = this.ConvertToDict(_importedFileContents);
-                         Resources["CustomItemsDictList"] = CustomItemsList;
-                         if(CustomItemsList.Count > 0)
+                         CustomItemsList = this.ConvertToDict(sr.ReadToEnd());
+                         FilteredCustomItemsList = CustomItemsList;
+                         Resources["CustomItemsDictList"] = FilteredCustomItemsList;
+                         if (CustomItemsList.Count > 0)
                          {
-                              var BodyContainer = (Grid)this.FindName("BodyContainer");
                               BodyContainer.Visibility = Visibility.Visible;
+                              EmptyViewText.Visibility = Visibility.Collapsed;
                          }
                     }
                     catch (IOException error)
@@ -58,13 +58,18 @@ namespace CS
                saveFileDialog.DefaultExt = ".audit";
                if (saveFileDialog.ShowDialog() == true)
                {
-                    File.WriteAllText(saveFileDialog.FileName, _importedFileContents);
+                    StringBuilder sb = new();
+                    foreach (var item in FilteredCustomItemsList)
+                    {
+                         if (item.IsChecked == true) sb.Append(item.ToString());
+                    }
+                    File.WriteAllText(saveFileDialog.FileName, sb.ToString());
                }
           }
           private void SaveJSONFile(object sender, RoutedEventArgs e)
           {
                SaveFileDialog saveFileDialog = new();
-               var JSONFileData = JsonConvert.SerializeObject(CustomItemsList.Select(item => item.Properties));
+               var JSONFileData = JsonConvert.SerializeObject(FilteredCustomItemsList.Where(item => item.IsChecked == true).Select(item => item.Properties));
                if (saveFileDialog.ShowDialog() == true)
                {
                     File.WriteAllText(saveFileDialog.FileName + ".json", JSONFileData);
@@ -73,7 +78,7 @@ namespace CS
 
           private void HandleAllItemsCheck(object sender, RoutedEventArgs e)
           {
-               foreach (var customItem in CustomItemsList)
+               foreach (var customItem in FilteredCustomItemsList)
                {
                     customItem.IsChecked = true;
                }
@@ -81,7 +86,7 @@ namespace CS
 
           private void HandleAllItemsUnchecked(object sender, RoutedEventArgs e)
           {
-               foreach (var customItem in CustomItemsList)
+               foreach (var customItem in FilteredCustomItemsList)
                {
                     customItem.IsChecked = false;
                }
@@ -131,10 +136,19 @@ namespace CS
                return parsedCustomItems;
           }
 
+          private void Search_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
+          {
+               FilteredCustomItemsList = CustomItemsList.Where(item =>
+                                          item.Properties.Keys.Select(key => key.ToLower()).Any(key => key.Contains(Search.Text.ToLower())) ||
+                                          item.Properties.Values.Select(value => value.ToLower()).Any(value => value.Contains(Search.Text.ToLower()))).ToList();
+               NoResultsFound.Visibility = FilteredCustomItemsList.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
+               Resources["CustomItemsDictList"] = FilteredCustomItemsList;
+          }
+
           private class CustomItem : INotifyPropertyChanged
           {
                public int Id { get; private set; }
-               private bool? _isChecked = false;
+               private bool? _isChecked = true;
                public bool? IsChecked
                {
                     get
@@ -159,7 +173,17 @@ namespace CS
                {
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
                }
-
+               public override string ToString()
+               {
+                    StringBuilder sb = new();
+                    sb.Append("<custom_item>\n");
+                    foreach (var key in Properties.Keys)
+                    {
+                         sb.Append(key + ":" + Properties[key] + "\n");
+                    }
+                    sb.Append("</custom_item>\n");
+                    return sb.ToString();
+               }
           }
      }
 }

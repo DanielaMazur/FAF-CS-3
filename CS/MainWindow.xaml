@@ -4,7 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Security Benchmarking Tool" Height="450" Width="800" WindowState="Maximized">
+        Title="Security Benchmarking Tool" Height="450" Width="800"
+        >
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
@@ -16,14 +17,19 @@
             </MenuItem>
         </Menu>
 
-        <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-            <Grid Name="BodyContainer" Visibility="Hidden">
+        <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto">
+            <Grid Name="BodyContainer" Visibility="Collapsed" Width="{Binding ActualWidth, RelativeSource = {RelativeSource AncestorType = {x:Type Window}}}" >
                 <Grid.RowDefinitions>
-                    <RowDefinition></RowDefinition>
+                    <RowDefinition MaxHeight="20"></RowDefinition>
                     <RowDefinition></RowDefinition>
                 </Grid.RowDefinitions>
-                <CheckBox Grid.Row="0" Margin="7,2,0,2" Content="Toggle All Items" Checked="HandleAllItemsCheck" Unchecked="HandleAllItemsUnchecked"/>
-                <ListBox  Grid.Row="1" ItemsSource="{DynamicResource CustomItemsDictList}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <CheckBox IsChecked="True" Grid.Row="0" Grid.Column="0" Margin="7,2,0,2" Content="Toggle All Items" Checked="HandleAllItemsCheck" Unchecked="HandleAllItemsUnchecked"/>
+                <TextBox  Grid.Row="0" Grid.Column="1" Name="Search" KeyUp="Search_KeyUp"/>
+                <ListBox  Grid.Row="1" Grid.ColumnSpan="2" ItemsSource="{DynamicResource CustomItemsDictList}" Name="ListBox">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <DockPanel>
@@ -31,8 +37,14 @@
                                 <ListView ItemsSource="{Binding Properties}">
                                     <ListView.View>
                                         <GridView>
-                                            <GridViewColumn DisplayMemberBinding="{Binding Key}" Header="Key" Width="Auto"/>
-                                            <GridViewColumn DisplayMemberBinding="{Binding Value}" Header="Value" Width="Auto" />
+                                            <GridViewColumn DisplayMemberBinding="{Binding Key}" Header="Key"/>
+                                            <GridViewColumn Header="Value" Width="665">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock TextWrapping="Wrap" Text="{Binding Value}" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
                                         </GridView>
                                     </ListView.View>
                                 </ListView>
@@ -40,7 +52,14 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
+                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Name="NoResultsFound" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed">
+                      No results found for the given keyword.
+                </TextBlock>
             </Grid>
         </ScrollViewer>
+
+        <TextBlock Name="EmptyViewText" VerticalAlignment="Center" HorizontalAlignment="Center">
+            Import a .audit file to get started. Go to File > Open .audit file
+        </TextBlock>
     </DockPanel>
 </Window>
