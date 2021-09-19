@@ -1,8 +1,6 @@
 ﻿using Microsoft.Win32;
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -21,6 +19,8 @@ namespace CS
 
           private void ButtonUpload_Click(object sender, RoutedEventArgs e)
           {
+
+
                OpenFileDialog fileDialog = new();
                fileDialog.DefaultExt = ".audit";
                var dialogResult = fileDialog.ShowDialog();
@@ -32,6 +32,9 @@ namespace CS
                          using var sr = new StreamReader(fileDialog.FileName);
                          FileTextBlock.Text = sr.ReadToEnd();
                          ConvertToJson.IsEnabled = true;
+                         //Clear TreeView
+                         TreeView.Items.Clear();
+                         ExportJsonFile.IsEnabled = false;
                     }
                     catch (IOException error)
                     {
@@ -43,6 +46,16 @@ namespace CS
           private void ButtonConvertToJson_Click(object sender, RoutedEventArgs e)
           {
                var textToBeConverted = FileTextBlock.Text;
+
+               var auditDict = ConvertAuditFileDataToDict(textToBeConverted);
+
+               ExportJsonFile.IsEnabled = true;
+              
+               JSONFileData = Newtonsoft.Json.JsonConvert.SerializeObject(auditDict);
+          }
+
+          private Dictionary<string, object> ConvertAuditFileDataToDict(string fileData)
+          {
                var custom_items = new List<Dictionary<string, string>>();
 
                bool isCustmItemParsingStarted = false;
@@ -56,23 +69,23 @@ namespace CS
                DefaultTreeViewItem.Header = "custom_items";
                TreeView.Items.Add(DefaultTreeViewItem);
 
-               foreach (var textLine in textToBeConverted.Split("\n"))
+               foreach (var textLine in fileData.Split("\n"))
                {
                     if (textLine.StartsWith("#")) continue;
 
                     if (textLine.Contains("<custom_item>"))
-                    {
-                         isCustmItemParsingStarted = true;
-                         continue;
-                    }
-
-                    if (textLine.Contains("</custom_item>"))
                     {
                          //create a new key which is the index of the item in the collection
                          activeTreeKey = new();
                          activeTreeKey.Header = custom_items.Count;
                          DefaultTreeViewItem.Items.Add(activeTreeKey);
 
+                         isCustmItemParsingStarted = true;
+                         continue;
+                    }
+
+                    if (textLine.Contains("</custom_item>"))
+                    {
                          custom_items.Add(activeCutsomItem);
 
                          activeCutsomItem = new();
@@ -87,12 +100,12 @@ namespace CS
 
                          if (isLastLineInStirng)
                          {
-                              activeCutsomItem.Add(multilineStringKeyValuePair.Key, multilineStringKeyValuePair.Value.Replace("\"", ""));
+                              activeCutsomItem.Add(multilineStringKeyValuePair.Key, multilineStringKeyValuePair.Value);
 
                               //set key value pair for the created collection keys
-                              TreeViewItem newValue = new();
-                              newValue.Header = $"{multilineStringKeyValuePair.Key} : {multilineStringKeyValuePair.Value}";
-                              activeTreeKey.Items.Add(newValue);
+                              TreeViewItem newTreeValue = new();
+                              newTreeValue.Header = $"{multilineStringKeyValuePair.Key} : { multilineStringKeyValuePair.Value}";
+                              activeTreeKey.Items.Add(newTreeValue);
 
                               multilineStringKeyValuePair = new(null, null);
                          }
@@ -104,53 +117,38 @@ namespace CS
                          var keyValuePair = textLine.Split(':', 2);
                          var key = keyValuePair[0].Trim();
                          var value = keyValuePair[1].Trim();
-                         var isValueStirng = value.StartsWith('"');
-                         var isValueFinishedInCurrentLine = value.EndsWith('"');
-                         if (isValueStirng && !isValueFinishedInCurrentLine)
+
+                         if (value.StartsWith('"') && value.Split('"').Length - 1 == 1 && !value.EndsWith('"'))
                          {
                               multilineStringKeyValuePair = new KeyValuePair<string, string>(key, keyValuePair[1]);
                               continue;
                          }
-                         activeCutsomItem.Add(key, value.Replace("\"", ""));
+                         activeCutsomItem.Add(key, value);
 
                          //set key value pair for the created collection keys
-                         TreeViewItem newValue = new();
-                         newValue.Header = $"{key} : {value}";
-                         activeTreeKey.Items.Add(newValue);
+                         TreeViewItem newTreeValue = new();
+                         newTreeValue.Header = $"{key} : {value}";
+                         activeTreeKey.Items.Add(newTreeValue);
                     }
                }
 
-               ExportJsonFile.IsEnabled = true;
-
                var dictionaryWithMainKey = new Dictionary<string, object>();
                dictionaryWithMainKey.Add("custom_items", custom_items);
-               //TreeView.ItemsSource = dictionaryWithMainKey;
-               JSONFileData = Newtonsoft.Json.JsonConvert.SerializeObject(dictionaryWithMainKey);
+
+               return dictionaryWithMainKey;
           }
 
           private void ButtonExportJsonFile_Click(object sender, RoutedEventArgs e)
           {
-               this.CreateFile();
+               this.SaveFile();
           }
 
-          private void CreateFile()
+          private void SaveFile()
           {
-               string path = @"C:\Users\user\Desktop\FAF-3\test.json";
-
-               try
+               SaveFileDialog saveFileDialog = new SaveFileDialog();
+               if (saveFileDialog.ShowDialog() == true)
                {
-                    // Create the file, or overwrite if the file exists.
-                    using (FileStream fs = File.Create(path))
-                    {
-                         byte[] info = new UTF8Encoding(true).GetBytes(JSONFileData);
-                         // Add some information to the file.
-                         fs.Write(info, 0, info.Length);
-                    }
-               }
-
-               catch (Exception ex)
-               {
-                    Console.WriteLine(ex.ToString());
+                   File.WriteAllText(saveFileDialog.FileName + ".json", JSONFileData);
                }
           }
      }
