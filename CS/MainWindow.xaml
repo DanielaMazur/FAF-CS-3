@@ -3,27 +3,34 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:CS"
         mc:Ignorable="d"
-        Title="Import Compliance Audit Policies" Height="450" Width="800" WindowState="Maximized">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="1*" />
-            <ColumnDefinition Width="1*" />
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="1*" />
-            <RowDefinition Height="9*" />
-            <RowDefinition Height="1*" />
-        </Grid.RowDefinitions>
-        <Button x:Name="Upload" Click="ButtonUpload_Click">Upload</Button>
-        <Button Grid.Column="1" x:Name="ConvertToJson" Click="ButtonConvertToJson_Click" IsEnabled="False">Convert To Json</Button>
-        <Button Grid.Column="1" Grid.Row="2" x:Name="ExportJsonFile" Click="ButtonExportJsonFile_Click" IsEnabled="False">Export Json File</Button>
-        <ScrollViewer Grid.RowSpan="2"  Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-            <TextBlock Margin="10" x:Name="FileTextBlock" />
+        Title="Security Benchmarking Tool" Height="450" Width="800" WindowState="Maximized">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="Open .audit file" Click="OpenAuditFile"  />
+                <MenuItem Header="Save">
+                    <MenuItem Header="As .audit" Click="SaveAuditFile" />
+                    <MenuItem Header="As .json" Click="SaveJSONFile" />
+                </MenuItem>
+            </MenuItem>
+        </Menu>
+
+        <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+            <ListBox ItemsSource="{DynamicResource CutsomItemsDictList}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <ListView ItemsSource="{Binding}">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn DisplayMemberBinding="{Binding Path=Key}" Header="Key" Width="Auto"/>
+                                    <GridViewColumn DisplayMemberBinding="{Binding Path=Value}" Header="Value" Width="Auto" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
         </ScrollViewer>
-        <ScrollViewer Grid.Row="1" Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-            <TreeView Name="TreeView"></TreeView>
-        </ScrollViewer>
-    </Grid>
+    </DockPanel>
 </Window>

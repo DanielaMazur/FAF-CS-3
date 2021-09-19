@@ -1,8 +1,8 @@
 ﻿using Microsoft.Win32;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace CS
 {
@@ -11,18 +11,18 @@ namespace CS
      /// </summary>
      public partial class MainWindow : Window
      {
-          private string JSONFileData { get; set; }
+          private string _importedFileContents;
+          private List<Dictionary<string, string>> CutsomItemsDictList { get; set; }
           public MainWindow()
           {
                InitializeComponent();
+               Resources["CutsomItemsDictList"] = new List<Dictionary<string, string>>();
           }
 
-          private void ButtonUpload_Click(object sender, RoutedEventArgs e)
+          private void OpenAuditFile(object sender, RoutedEventArgs e)
           {
-
-
                OpenFileDialog fileDialog = new();
-               fileDialog.DefaultExt = ".audit";
+               fileDialog.Filter = "Audit files|*.audit";
                var dialogResult = fileDialog.ShowDialog();
 
                if (dialogResult.HasValue && dialogResult.Value)
@@ -30,11 +30,9 @@ namespace CS
                     try
                     {
                          using var sr = new StreamReader(fileDialog.FileName);
-                         FileTextBlock.Text = sr.ReadToEnd();
-                         ConvertToJson.IsEnabled = true;
-                         //Clear TreeView
-                         TreeView.Items.Clear();
-                         ExportJsonFile.IsEnabled = false;
+                         _importedFileContents = sr.ReadToEnd();
+                         CutsomItemsDictList = this.ConvertToDict(_importedFileContents);
+                         Resources["CutsomItemsDictList"] = CutsomItemsDictList;
                     }
                     catch (IOException error)
                     {
@@ -43,113 +41,54 @@ namespace CS
                }
           }
 
-          private void ButtonConvertToJson_Click(object sender, RoutedEventArgs e)
+          private void SaveAuditFile(object sender, RoutedEventArgs e)
           {
-               var textToBeConverted = FileTextBlock.Text;
-
-               var auditDict = ConvertAuditFileDataToDict(textToBeConverted);
-
-               ExportJsonFile.IsEnabled = true;
-              
-               JSONFileData = Newtonsoft.Json.JsonConvert.SerializeObject(auditDict);
-          }
-
-          private Dictionary<string, object> ConvertAuditFileDataToDict(string fileData)
-          {
-               var custom_items = new List<Dictionary<string, string>>();
-
-               bool isCustmItemParsingStarted = false;
-               KeyValuePair<string, string> multilineStringKeyValuePair = new(null, null);
-
-               Dictionary<string, string> activeCutsomItem = new();
-
-               TreeViewItem activeTreeKey = new();
-
-               TreeViewItem DefaultTreeViewItem = new();
-               DefaultTreeViewItem.Header = "custom_items";
-               TreeView.Items.Add(DefaultTreeViewItem);
-
-               foreach (var textLine in fileData.Split("\n"))
-               {
-                    if (textLine.StartsWith("#")) continue;
-
-                    if (textLine.Contains("<custom_item>"))
-                    {
-                         //create a new key which is the index of the item in the collection
-                         activeTreeKey = new();
-                         activeTreeKey.Header = custom_items.Count;
-                         DefaultTreeViewItem.Items.Add(activeTreeKey);
-
-                         isCustmItemParsingStarted = true;
-                         continue;
-                    }
-
-                    if (textLine.Contains("</custom_item>"))
-                    {
-                         custom_items.Add(activeCutsomItem);
-
-                         activeCutsomItem = new();
-                         isCustmItemParsingStarted = false;
-                         continue;
-                    }
-
-                    if (multilineStringKeyValuePair.Key != null)
-                    {
-                         multilineStringKeyValuePair = new(multilineStringKeyValuePair.Key, multilineStringKeyValuePair.Value + textLine);
-                         bool isLastLineInStirng = textLine.Trim().EndsWith('"');
-
-                         if (isLastLineInStirng)
-                         {
-                              activeCutsomItem.Add(multilineStringKeyValuePair.Key, multilineStringKeyValuePair.Value);
-
-                              //set key value pair for the created collection keys
-                              TreeViewItem newTreeValue = new();
-                              newTreeValue.Header = $"{multilineStringKeyValuePair.Key} : { multilineStringKeyValuePair.Value}";
-                              activeTreeKey.Items.Add(newTreeValue);
-
-                              multilineStringKeyValuePair = new(null, null);
-                         }
-                         continue;
-                    }
-
-                    if (isCustmItemParsingStarted)
-                    {
-                         var keyValuePair = textLine.Split(':', 2);
-                         var key = keyValuePair[0].Trim();
-                         var value = keyValuePair[1].Trim();
-
-                         if (value.StartsWith('"') && value.Split('"').Length - 1 == 1 && !value.EndsWith('"'))
-                         {
-                              multilineStringKeyValuePair = new KeyValuePair<string, string>(key, keyValuePair[1]);
-                              continue;
-                         }
-                         activeCutsomItem.Add(key, value);
-
-                         //set key value pair for the created collection keys
-                         TreeViewItem newTreeValue = new();
-                         newTreeValue.Header = $"{key} : {value}";
-                         activeTreeKey.Items.Add(newTreeValue);
-                    }
-               }
-
-               var dictionaryWithMainKey = new Dictionary<string, object>();
-               dictionaryWithMainKey.Add("custom_items", custom_items);
-
-               return dictionaryWithMainKey;
-          }
-
-          private void ButtonExportJsonFile_Click(object sender, RoutedEventArgs e)
-          {
-               this.SaveFile();
-          }
-
-          private void SaveFile()
-          {
-               SaveFileDialog saveFileDialog = new SaveFileDialog();
+               SaveFileDialog saveFileDialog = new();
+               saveFileDialog.DefaultExt = ".audit";
                if (saveFileDialog.ShowDialog() == true)
                {
-                   File.WriteAllText(saveFileDialog.FileName + ".json", JSONFileData);
+                    File.WriteAllText(saveFileDialog.FileName, _importedFileContents);
                }
+          }
+          private void SaveJSONFile(object sender, RoutedEventArgs e)
+          {
+               SaveFileDialog saveFileDialog = new();
+               var JSONFileData = Newtonsoft.Json.JsonConvert.SerializeObject(CutsomItemsDictList);
+               if (saveFileDialog.ShowDialog() == true)
+               {
+                    File.WriteAllText(saveFileDialog.FileName + ".json", JSONFileData);
+               }
+          }
+
+          private List<Dictionary<string, string>> ConvertToDict(string fileData)
+          {
+               var customItemPattern = @"<custom_item>([\S\s]*?)</custom_item>";
+               var customItemKeyValuePattern = @"^[\s]+([a-z_]+)\s+:\s+((""[\S\s\n]*?"")|([^\n]+))";
+
+               Regex regexCustomItemPattern = new(customItemPattern);
+               Regex regexCustomItemKeyValuePattern = new(customItemKeyValuePattern, RegexOptions.Multiline);
+
+               var customItems = regexCustomItemPattern.Matches(fileData);
+
+               var parsedCustomItems = new List<Dictionary<string, string>>();
+
+               foreach (var customItem in customItems)
+               {
+                    var keyValuePairs = regexCustomItemKeyValuePattern.Matches(customItem.ToString());
+                    var keysValuesDict = new Dictionary<string, string>();
+
+                    foreach (var keyValuePair in keyValuePairs)
+                    {
+                         var keyValueArray = keyValuePair.ToString().Split(":", 2);
+                         var key = keyValueArray[0].Trim();
+                         var value = keyValueArray[1].Trim();
+
+                         keysValuesDict.Add(key, value);
+                    }
+                    parsedCustomItems.Add(keysValuesDict);
+               }
+
+               return parsedCustomItems;
           }
      }
 }
