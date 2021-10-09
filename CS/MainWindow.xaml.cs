@@ -1,10 +1,10 @@
 ﻿using Microsoft.Win32;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -61,7 +61,7 @@ namespace CS
                     StringBuilder sb = new();
                     foreach (var item in FilteredCustomItemsList)
                     {
-                         if (item.IsChecked == true) sb.Append(item.ToString());
+                         if (item.IsChecked) sb.Append(item.ToString());
                     }
                     File.WriteAllText(saveFileDialog.FileName, sb.ToString());
                }
@@ -69,7 +69,7 @@ namespace CS
           private void SaveJSONFile(object sender, RoutedEventArgs e)
           {
                SaveFileDialog saveFileDialog = new();
-               var JSONFileData = JsonConvert.SerializeObject(FilteredCustomItemsList.Where(item => item.IsChecked == true).Select(item => item.Properties));
+               var JSONFileData = JsonConvert.SerializeObject(FilteredCustomItemsList.Where(item => item.IsChecked).Select(item => item.Properties));
                if (saveFileDialog.ShowDialog() == true)
                {
                     File.WriteAllText(saveFileDialog.FileName + ".json", JSONFileData);
@@ -145,45 +145,96 @@ namespace CS
                Resources["CustomItemsDictList"] = FilteredCustomItemsList;
           }
 
-          private class CustomItem : INotifyPropertyChanged
+          private void AuditCheckedItems(object sender, RoutedEventArgs e)
           {
-               public int Id { get; private set; }
-               private bool? _isChecked = true;
-               public bool? IsChecked
+               var checkedCustomItems = CustomItemsList.Where((item) => item.IsChecked);
+               var auditCheckItems = new ObservableCollection<AuditCheck>();
+               foreach (var customItem in checkedCustomItems)
                {
-                    get
+                    if (customItem.Properties.TryGetValue("type", out string customItemType) && customItemType == "REGISTRY_SETTING")
                     {
-                         return _isChecked;
-                    }
-                    set
-                    {
-                         _isChecked = value;
-                         NotifyPropertyChanged();
-                    }
-               }
-               public Dictionary<string, string> Properties { get; private set; }
-               public CustomItem(int id, Dictionary<string, string> properties)
-               {
-                    Id = id;
-                    Properties = properties;
-               }
+                         if (customItem.Properties.TryGetValue("reg_key", out string registryKey))
+                         {
+                              var registryPath = registryKey.Replace("HKLM\\", "").Replace("\"", "");
+                              var key = Registry.LocalMachine.OpenSubKey(registryPath);
+                              if (key == null)
+                              {
+                                   auditCheckItems.Add(new AuditCheck()
+                                   {
+                                        CustomItem = customItem,
+                                        IsSuccessfull = false
+                                   });
+                                   continue;
+                              }
+                              if (customItem.Properties.TryGetValue("reg_item", out string registryItem))
+                              {
+                                   var value = Convert.ToString(key.GetValue(registryItem.Replace("\"", "")));
+                                   if (value == null)
+                                   {
+                                        auditCheckItems.Add(new AuditCheck()
+                                        {
+                                             CustomItem = customItem,
+                                             IsSuccessfull = false
+                                        });
+                                        continue;
+                                   };
 
-               public event PropertyChangedEventHandler PropertyChanged;
-               private void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
-               {
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-               }
-               public override string ToString()
-               {
-                    StringBuilder sb = new();
-                    sb.Append("<custom_item>\n");
-                    foreach (var key in Properties.Keys)
-                    {
-                         sb.Append(key + ":" + Properties[key] + "\n");
+                                   if (customItem.Properties.TryGetValue("check_type", out string checkType) && checkType == "CHECK_REGEX")
+                                   {
+                                        customItem.Properties.TryGetValue("value_data", out string pattern);
+                                        Regex regexPattern = new(pattern.Replace("\"", ""));
+                                        var isMatching = regexPattern.IsMatch(value);
+                                        auditCheckItems.Add(new AuditCheck()
+                                        {
+                                             CustomItem = customItem,
+                                             IsSuccessfull = isMatching
+                                        });
+                                        continue;
+                                   }
+
+                                   if (customItem.Properties.TryGetValue("reg_option", out string regOption))
+                                   {
+                                        switch (regOption.Replace("\"", ""))
+                                        {
+                                             case "CAN_NOT_BE_NULL":
+                                                  auditCheckItems.Add(new AuditCheck()
+                                                  {
+                                                       CustomItem = customItem,
+                                                       IsSuccessfull = value != null
+                                                  });
+                                                  break;
+                                             case "MUST_NOT_EXIST":
+                                                  auditCheckItems.Add(new AuditCheck()
+                                                  {
+                                                       CustomItem = customItem,
+                                                       IsSuccessfull = value == null
+                                                  });
+                                                  break;
+                                             case "CAN_BE_NULL":
+                                                  auditCheckItems.Add(new AuditCheck()
+                                                  {
+                                                       CustomItem = customItem,
+                                                       IsSuccessfull = value == null || value != null
+                                                  });
+                                                  break;
+                                        }
+                                        continue;
+                                   }
+
+                                   customItem.Properties.TryGetValue("value_data", out string valueData);
+                                   var isSuccessfull = valueData == value;
+                                   auditCheckItems.Add(new AuditCheck()
+                                   {
+                                        CustomItem = customItem,
+                                        IsSuccessfull = isSuccessfull
+                                   });
+                              }
+                         }
                     }
-                    sb.Append("</custom_item>\n");
-                    return sb.ToString();
                }
+               var dialog = new AuditCheckModal();
+               dialog.SetResources(auditCheckItems);
+               dialog.ShowDialog();
           }
      }
 }

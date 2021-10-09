@@ -15,6 +15,7 @@
                     <MenuItem Header="As .json" Click="SaveJSONFile" />
                 </MenuItem>
             </MenuItem>
+            <MenuItem Header="_Audit" Click="AuditCheckedItems"></MenuItem>
         </Menu>
 
         <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto">
@@ -27,7 +28,7 @@
                     <ColumnDefinition></ColumnDefinition>
                     <ColumnDefinition></ColumnDefinition>
                 </Grid.ColumnDefinitions>
-                <CheckBox IsChecked="True" Grid.Row="0" Grid.Column="0" Margin="7,2,0,2" Content="Toggle All Items" Checked="HandleAllItemsCheck" Unchecked="HandleAllItemsUnchecked"/>
+                <CheckBox IsChecked="False" Grid.Row="0" Grid.Column="0" Margin="7,2,0,2" Content="Toggle All Items" Checked="HandleAllItemsCheck" Unchecked="HandleAllItemsUnchecked"/>
                 <TextBox  Grid.Row="0" Grid.Column="1" Name="Search" KeyUp="Search_KeyUp"/>
                 <ListBox  Grid.Row="1" Grid.ColumnSpan="2" ItemsSource="{DynamicResource CustomItemsDictList}" Name="ListBox">
                     <ListBox.ItemTemplate>
