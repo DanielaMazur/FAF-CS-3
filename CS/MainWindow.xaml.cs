@@ -203,5 +203,21 @@ namespace CS
                     }
                }
           }
+
+          public void EnforceFailedItems()
+          {
+               var failedCustomItems = CustomItemsList.Where((item) => item.IsChecked && item.AuditStatus == AuditStatusEnum.Fail);
+               foreach (var customItem in failedCustomItems)
+               {
+                    if (customItem.Properties.TryGetValue("type", out string customItemType) && customItemType == "REGISTRY_SETTING")
+                    {
+                         if (customItem.Properties.TryGetValue("reg_key", out string registryKey))
+                         {
+                              customItem.Properties.TryGetValue("value_data", out string expectedValue);
+                              Registry.LocalMachine.SetValue(registryKey, expectedValue);
+                         }
+                    }
+
+               }
+          }
      }
-}
