@@ -8,6 +8,22 @@ namespace CS
      class CustomItem : INotifyPropertyChanged
      {
           public int Id { get; private set; }
+
+          private AuditStatusEnum _auditStatus = AuditStatusEnum.Unprocessed;
+          public AuditStatusEnum AuditStatus
+          {
+               get
+               {
+
+                    return _auditStatus;
+               }
+               set
+               {
+                    _auditStatus = value;
+                    NotifyPropertyChanged();
+               }
+          }
+
           private bool _isChecked = false;
           public bool IsChecked
           {

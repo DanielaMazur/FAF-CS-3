@@ -148,7 +148,6 @@ namespace CS
           private void AuditCheckedItems(object sender, RoutedEventArgs e)
           {
                var checkedCustomItems = CustomItemsList.Where((item) => item.IsChecked);
-               var auditCheckItems = new ObservableCollection<AuditCheck>();
                foreach (var customItem in checkedCustomItems)
                {
                     if (customItem.Properties.TryGetValue("type", out string customItemType) && customItemType == "REGISTRY_SETTING")
@@ -159,11 +158,7 @@ namespace CS
                               var key = Registry.LocalMachine.OpenSubKey(registryPath);
                               if (key == null)
                               {
-                                   auditCheckItems.Add(new AuditCheck()
-                                   {
-                                        CustomItem = customItem,
-                                        IsSuccessfull = false
-                                   });
+                                   customItem.AuditStatus = AuditStatusEnum.Fail;
                                    continue;
                               }
                               if (customItem.Properties.TryGetValue("reg_item", out string registryItem))
@@ -171,11 +166,7 @@ namespace CS
                                    var value = Convert.ToString(key.GetValue(registryItem.Replace("\"", "")));
                                    if (value == null)
                                    {
-                                        auditCheckItems.Add(new AuditCheck()
-                                        {
-                                             CustomItem = customItem,
-                                             IsSuccessfull = false
-                                        });
+                                        customItem.AuditStatus = AuditStatusEnum.Fail;
                                         continue;
                                    };
 
@@ -184,11 +175,7 @@ namespace CS
                                         customItem.Properties.TryGetValue("value_data", out string pattern);
                                         Regex regexPattern = new(pattern.Replace("\"", ""));
                                         var isMatching = regexPattern.IsMatch(value);
-                                        auditCheckItems.Add(new AuditCheck()
-                                        {
-                                             CustomItem = customItem,
-                                             IsSuccessfull = isMatching
-                                        });
+                                        customItem.AuditStatus = isMatching ? AuditStatusEnum.Success : AuditStatusEnum.Fail;
                                         continue;
                                    }
 
@@ -197,44 +184,24 @@ namespace CS
                                         switch (regOption.Replace("\"", ""))
                                         {
                                              case "CAN_NOT_BE_NULL":
-                                                  auditCheckItems.Add(new AuditCheck()
-                                                  {
-                                                       CustomItem = customItem,
-                                                       IsSuccessfull = value != null
-                                                  });
+                                                  customItem.AuditStatus = value != null ? AuditStatusEnum.Success : AuditStatusEnum.Fail;
                                                   break;
                                              case "MUST_NOT_EXIST":
-                                                  auditCheckItems.Add(new AuditCheck()
-                                                  {
-                                                       CustomItem = customItem,
-                                                       IsSuccessfull = value == null
-                                                  });
+                                                  customItem.AuditStatus = value == null ? AuditStatusEnum.Success : AuditStatusEnum.Fail;
                                                   break;
                                              case "CAN_BE_NULL":
-                                                  auditCheckItems.Add(new AuditCheck()
-                                                  {
-                                                       CustomItem = customItem,
-                                                       IsSuccessfull = value == null || value != null
-                                                  });
+                                                  customItem.AuditStatus = AuditStatusEnum.Success;
                                                   break;
                                         }
                                         continue;
                                    }
 
                                    customItem.Properties.TryGetValue("value_data", out string valueData);
-                                   var isSuccessfull = valueData == value;
-                                   auditCheckItems.Add(new AuditCheck()
-                                   {
-                                        CustomItem = customItem,
-                                        IsSuccessfull = isSuccessfull
-                                   });
+                                   customItem.AuditStatus = valueData == value ? AuditStatusEnum.Success : AuditStatusEnum.Fail;
                               }
                          }
                     }
                }
-               var dialog = new AuditCheckModal();
-               dialog.SetResources(auditCheckItems);
-               dialog.ShowDialog();
           }
      }
 }
