@@ -13,7 +13,9 @@ The aim of the project is to develop a Security Benchmarking Tool as a desktop a
 - Select or deselect all options in one click;
 - Create and save a policy that contains only the selected options under the same name or
 a different one.
-
+### Lab 3: Auditing a Workstation
+- Perform an audit of the workstation, using the options that were selected;
+- Output the results of the audit on screen
 # Technologies
 [Windows Presentation Foundation (WPF)](https://docs.microsoft.com/en-us/visualstudio/designers/getting-started-with-wpf?view=vs-2019) - used to create the desktop client app.
  
