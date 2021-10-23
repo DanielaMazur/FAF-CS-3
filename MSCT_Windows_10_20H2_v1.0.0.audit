@@ -1,0 +1,71 @@
+     <custom_item>
+      type        : REGISTRY_SETTING
+      description : "Windows 10 is installed"
+      value_type  : POLICY_TEXT
+      value_data  : "^[Ww][Ii][Nn][Dd][Oo][Ww][Ss] 10.+$"
+      reg_key     : "HKLM\Software\Microsoft\Windows Nt\Currentversion"
+      reg_item    : "ProductName"
+      check_type  : CHECK_REGEX
+    </custom_item>
+
+    <custom_item>
+      type        : REGISTRY_SETTING
+      description : "Check Windows Release"
+      value_type  : POLICY_TEXT
+      value_data  : "2009"
+      reg_key     : "HKLM\Software\Microsoft\Windows Nt\Currentversion"
+      reg_item    : "ReleaseId"
+      check_type  : CHECK_REGEX
+    </custom_item>
+	
+    <custom_item>
+      type        : REGISTRY_SETTING
+      description : "Prevent installation of devices using drivers that match these device setup classes - DenyDeviceClasses"
+      info        : "This policy setting allows you to specify a list of device setup class globally unique identifiers (GUIDs) for device drivers that Windows is prevented from installing. This policy setting takes precedence over any other policy setting that allows Windows to install a device.
+
+If you enable this policy setting, Windows is prevented from installing or updating device drivers whose device setup class GUIDs appear in the list you create. If you enable this policy setting on a remote desktop server, the policy setting affects redirection of the specified devices from a remote desktop client to the remote desktop server.
+If you disable or do not configure this policy setting, Windows can install and update devices as allowed or prevented by other policy settings."
+      solution    : "Policy Path: System\Device Installation\Device Installation Restrictions
+Policy Setting Name: Prevent installation of devices using drivers that match these device setup classes"
+      see_also    : "https://techcommunity.microsoft.com/t5/microsoft-security-baselines/security-baseline-final-for-windows-10-and-windows-server/ba-p/1999393"
+      value_type  : POLICY_DWORD
+      value_data  : "1"
+      reg_key     : "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeviceInstall\Restrictions"
+      reg_item    : "DenyDeviceClasses"
+      reg_option  : CAN_NOT_BE_NULL
+      reference   : "800-171|3.8.7,800-53|MP-7.,CN-L3|8.5.4.1(c),CSCv6|13.5,CSF|PR.PT-2,ISO/IEC-27001|A.8.3.1,ISO/IEC-27001|A.8.3.3,NESA|T1.4.1"
+    </custom_item>
+
+    <custom_item>
+      type        : REGISTRY_SETTING
+      description : "Prevent enabling lock screen slide show"
+      info        : "Disables the lock screen slide show settings in PC Settings and prevents a slide show from playing on the lock screen.
+By default, users can enable a slide show that will run after they lock the machine.
+If you enable this setting, users will no longer be able to modify slide show settings in PC Settings, and no slide show will ever start."
+      solution    : "Policy Path: Control Panel\Personalization
+Policy Setting Name: Prevent enabling lock screen slide show"
+      see_also    : "https://techcommunity.microsoft.com/t5/microsoft-security-baselines/security-baseline-final-for-windows-10-and-windows-server/ba-p/1999393"
+      value_type  : POLICY_DWORD
+      value_data  : "1"
+      reg_key     : "HKLM\Software\Policies\Microsoft\Windows\Personalization"
+      reg_item    : "NoLockScreenSlideshow"
+      reg_option  : CAN_NOT_BE_NULL
+      reference   : "800-171|3.4.2,800-53|CM-6b.,CN-L3|8.1.10.6(d),CSCv6|3.1,CSF|PR.IP-1,ITSG-33|CM-6b.,NESA|T3.2.1,PCI-DSSv3.1|2.2.4,PCI-DSSv3.2|2.2.4,SWIFT-CSCv1|2.3"
+    </custom_item>
+
+    <custom_item>
+      type        : REGISTRY_SETTING
+      description : "Prevent enabling lock screen camera"
+      info        : "Disables the lock screen camera toggle switch in PC Settings and prevents a camera from being invoked on the lock screen.
+By default, users can enable invocation of an available camera on the lock screen.
+If you enable this setting, users will no longer be able to enable or disable lock screen camera access in PC Settings, and the camera cannot be invoked on the lock screen."
+      solution    : "Policy Path: Control Panel\Personalization
+Policy Setting Name: Prevent enabling lock screen camera"
+      see_also    : "https://techcommunity.microsoft.com/t5/microsoft-security-baselines/security-baseline-final-for-windows-10-and-windows-server/ba-p/1999393"
+      value_type  : POLICY_DWORD
+      value_data  : "1"
+      reg_key     : "HKLM\Software\Policies\Microsoft\Windows\Personalization"
+      reg_item    : "NoLockScreenCamera"
+      reg_option  : CAN_NOT_BE_NULL
+      reference   : "800-171|3.4.2,800-53|CM-6b.,CN-L3|8.1.10.6(d),CSCv6|3.1,CSF|PR.IP-1,ITSG-33|CM-6b.,NESA|T3.2.1,PCI-DSSv3.1|2.2.4,PCI-DSSv3.2|2.2.4,SWIFT-CSCv1|2.3"
+    </custom_item>
