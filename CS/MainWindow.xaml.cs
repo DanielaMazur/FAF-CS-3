@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using Fare;
+using Microsoft.Win32;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -204,7 +205,7 @@ namespace CS
                }
           }
 
-          public void EnforceFailedItems()
+          public void EnforceFailedItems(object sender, RoutedEventArgs e)
           {
                var failedCustomItems = CustomItemsList.Where((item) => item.IsChecked && item.AuditStatus == AuditStatusEnum.Fail);
                foreach (var customItem in failedCustomItems)
@@ -213,11 +214,36 @@ namespace CS
                     {
                          if (customItem.Properties.TryGetValue("reg_key", out string registryKey))
                          {
-                              customItem.Properties.TryGetValue("value_data", out string expectedValue);
-                              Registry.LocalMachine.SetValue(registryKey, expectedValue);
+                              if (customItem.Properties.TryGetValue("reg_item", out string registryItem))
+                              {
+                                   customItem.Properties.TryGetValue("value_data", out string expectedValueRegex);
+                                   customItem.InitialValue = Convert.ToString(Registry.LocalMachine.OpenSubKey(registryKey).GetValue(registryItem.Replace("\"", "")));
+
+                                   var xeger = new Xeger(expectedValueRegex);
+                                   var generatedString = xeger.Generate();
+
+                                   Registry.LocalMachine.SetValue(registryKey, generatedString);
+                                   customItem.AuditStatus = AuditStatusEnum.Changed;
+                              }
                          }
                     }
+               }
+          }
 
+          public void Rollback(object sender, RoutedEventArgs e)
+          {
+               var changedCustomItems = CustomItemsList.Where((item) => item.IsChecked && item.AuditStatus == AuditStatusEnum.Changed);
+               foreach (var customItem in changedCustomItems)
+               {
+                    if (customItem.Properties.TryGetValue("type", out string customItemType) && customItemType == "REGISTRY_SETTING")
+                    {
+                         if (customItem.Properties.TryGetValue("reg_key", out string registryKey))
+                         {
+                              Registry.LocalMachine.SetValue(registryKey, customItem.InitialValue);
+                              customItem.AuditStatus = AuditStatusEnum.Unprocessed;
+                         }
+                    }
                }
           }
      }
+}

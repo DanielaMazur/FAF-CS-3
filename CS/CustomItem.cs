@@ -24,6 +24,8 @@ namespace CS
                }
           }
 
+          public string InitialValue { get; set; }
+
           private bool _isChecked = false;
           public bool IsChecked
           {

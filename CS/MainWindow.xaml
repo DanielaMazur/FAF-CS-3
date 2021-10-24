@@ -20,6 +20,7 @@
             </MenuItem>
             <MenuItem Header="_Audit" Click="AuditCheckedItems"></MenuItem>
             <MenuItem Header="_Enforce" Click="EnforceFailedItems"></MenuItem>
+            <MenuItem Header="_Rollback" Click="Rollback"></MenuItem>
         </Menu>
 
         <ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto">

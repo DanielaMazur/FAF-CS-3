@@ -2,6 +2,6 @@
 {
      enum AuditStatusEnum
      {
-          Success, Fail, Unprocessed
+          Success, Fail, Unprocessed, Changed
      }
 }
