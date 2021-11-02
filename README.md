@@ -29,6 +29,11 @@ The aim of the project is to develop a Security Benchmarking Tool as a desktop a
 - Enforce the policy on at least 5 settings (edit the selected settings in your system);
 - Rollback to the system’s initial settings.
 
+### Lab 5: : Enforcing a Policy 
+- Select the settings to be enforced (a subset of ”Failed”, or all of them);
+- Enforce the policy on at least 20 settings (edit the selected settings in your system);
+- Rollback to the system’s initial settings.
+
 # Technologies
 
 [Windows Presentation Foundation (WPF)](https://docs.microsoft.com/en-us/visualstudio/designers/getting-started-with-wpf?view=vs-2019) - used to create the desktop client app.
